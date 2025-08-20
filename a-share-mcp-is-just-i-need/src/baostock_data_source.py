@@ -334,11 +334,10 @@ class BaostockDataSource(FinancialDataSource):
             "All Stock List",
             day=date
         )
-    # 新增爬虫功能
+    # 从更专业的地方获取新闻，而不是“百度”
     def crawl_news(self, query: str, top_k: int = 10) -> str:
         """
         直接从浏览器搜索并爬取相关文章内容，并使用风险模型和情感模型进行分析
-        
         Args:
             query: 用户查询
             top_k: 返回的新闻数量
@@ -347,8 +346,6 @@ class BaostockDataSource(FinancialDataSource):
             格式化的新闻结果
         """
         try:
-            
-            
             # 加载风险模型和情感模型
             risk_model, risk_tokenizer = self._load_risk_model()
             sentiment_model, sentiment_tokenizer = self._load_sentiment_model()
