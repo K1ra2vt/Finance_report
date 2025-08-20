@@ -334,10 +334,10 @@ class BaostockDataSource(FinancialDataSource):
             "All Stock List",
             day=date
         )
-    # 从更专业的地方获取新闻，而不是“百度”
+        # 从更专业的地方获取新闻，而不是"百度"
     def crawl_news(self, query: str, top_k: int = 10) -> str:
         """
-        直接从浏览器搜索并爬取相关文章内容，并使用风险模型和情感模型进行分析
+        直接从专业财经网站搜索并爬取相关文章内容，并使用风险模型和情感模型进行分析
         Args:
             query: 用户查询
             top_k: 返回的新闻数量
@@ -350,52 +350,42 @@ class BaostockDataSource(FinancialDataSource):
             risk_model, risk_tokenizer = self._load_risk_model()
             sentiment_model, sentiment_tokenizer = self._load_sentiment_model()
             
-            # 使用百度搜索
-            search_url = f"https://www.baidu.com/s?wd={query}"
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-            
-            response = requests.get(search_url, headers=headers, timeout=10)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # 提取搜索结果
+            # 从多个财经网站获取新闻列表
             results = []
-            search_results = soup.find_all('div', class_='result')
             
-            for result in search_results[:top_k]:
+            # 1. 从新浪财经获取新闻
+            sina_results = self._get_sina_finance_list(query, top_k // 3 + 1)
+            results.extend(sina_results)
+            
+            # 2. 从东方财富网获取新闻  
+            eastmoney_results = self._get_eastmoney_list(query, top_k // 3 + 1)
+            results.extend(eastmoney_results)
+            
+            # 3. 从腾讯财经获取新闻
+            tencent_results = self._get_tencent_finance_list(query, top_k // 3 + 1)
+            results.extend(tencent_results)
+            
+            # 限制返回数量并处理每条新闻
+            results = results[:top_k]
+            
+            for result in results:
                 try:
-                    # 提取标题和链接
-                    title_elem = result.find('h3')
-                    if title_elem:
-                        title = title_elem.get_text(strip=True)
-                        link = title_elem.find('a')['href'] if title_elem.find('a') else ''
-                        
-                        # 提取摘要
-                        abstract_elem = result.find('div', class_='c-abstract')
-                        abstract = abstract_elem.get_text(strip=True) if abstract_elem else ''
-                        
-                        # 获取完整文章内容
-                        full_content = self._get_article_content(link) if link else abstract
-                        
-                        # 使用模型分析内容
-                        risk_analysis = self._analyze_risk(full_content, risk_model, risk_tokenizer)
-                        sentiment_analysis = self._analyze_sentiment(full_content, sentiment_model, sentiment_tokenizer)
-                        
-                        results.append({
-                            'title': title,
-                            'content': full_content,
-                            'link': link,
-                            'source': '百度搜索',
-                            'date': '未知',
-                            'risk': risk_analysis,
-                            'sentiment': sentiment_analysis
-                        })
+                    # 获取完整文章内容（保持原有逻辑）
+                    full_content = self._get_article_content(result['link']) if result['link'] else result.get('abstract', '')
+                    result['content'] = full_content
+                    
+                    # 使用模型分析内容（保持原有逻辑）
+                    risk_analysis = self._analyze_risk(full_content, risk_model, risk_tokenizer)
+                    sentiment_analysis = self._analyze_sentiment(full_content, sentiment_model, sentiment_tokenizer)
+                    
+                    result['risk'] = risk_analysis
+                    result['sentiment'] = sentiment_analysis
+                    
                 except Exception as e:
-                    logger.warning(f"提取搜索结果时出错: {e}")
-                    continue
+                    logger.warning(f"处理新闻项时出错: {e}")
+                    result['content'] = result.get('abstract', '')
+                    result['risk'] = "分析失败"
+                    result['sentiment'] = "分析失败"
             
             if not results:
                 return "未找到相关新闻。"
@@ -417,6 +407,162 @@ class BaostockDataSource(FinancialDataSource):
         except Exception as e:
             logger.error(f"爬取新闻时出错: {e}")
             return f"爬取新闻时出错: {str(e)}"
+
+    def _get_sina_finance_list(self, query: str, limit: int = 5) -> list:
+        """从新浪财经获取新闻列表（仅获取标题、链接等基本信息）"""
+        try:
+            from urllib.parse import quote
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            # 新浪财经搜索
+            search_url = f"https://search.sina.com.cn/?q={quote(query)}&range=all&c=news&sort=time"
+            
+            response = requests.get(search_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            results = []
+            
+            # 解析搜索结果
+            news_items = soup.find_all('div', class_='box-result')[:limit]
+            
+            for item in news_items:
+                try:
+                    title_elem = item.find('h2')
+                    if title_elem and title_elem.find('a'):
+                        title = title_elem.get_text(strip=True)
+                        link = title_elem.find('a')['href']
+                        
+                        # 获取摘要
+                        summary_elem = item.find('p', class_='content')
+                        abstract = summary_elem.get_text(strip=True) if summary_elem else ''
+                        
+                        results.append({
+                            'title': title,
+                            'link': link,
+                            'source': '新浪财经',
+                            'date': '未知',
+                            'abstract': abstract
+                        })
+                        
+                except Exception as e:
+                    logger.warning(f"解析新浪财经新闻项时出错: {e}")
+                    continue
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"获取新浪财经新闻列表时出错: {e}")
+            return []
+
+    def _get_eastmoney_list(self, query: str, limit: int = 5) -> list:
+        """从东方财富网获取新闻列表（仅获取标题、链接等基本信息）"""
+        try:
+            from urllib.parse import quote
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            # 东方财富搜索
+            search_url = f"http://so.eastmoney.com/news/s?keyword={quote(query)}"
+            
+            response = requests.get(search_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            results = []
+            
+            # 解析搜索结果
+            news_items = soup.find_all('div', class_='news-item')[:limit]
+            
+            for item in news_items:
+                try:
+                    title_elem = item.find('a')
+                    if title_elem:
+                        title = title_elem.get_text(strip=True)
+                        link = title_elem['href']
+                        
+                        # 确保链接是完整的
+                        if link.startswith('//'):
+                            link = 'http:' + link
+                        elif link.startswith('/'):
+                            link = 'http://finance.eastmoney.com' + link
+                        
+                        # 获取摘要
+                        summary_elem = item.find('p')
+                        abstract = summary_elem.get_text(strip=True) if summary_elem else ''
+                        
+                        results.append({
+                            'title': title,
+                            'link': link,
+                            'source': '东方财富网',
+                            'date': '未知',
+                            'abstract': abstract
+                        })
+                        
+                except Exception as e:
+                    logger.warning(f"解析东方财富新闻项时出错: {e}")
+                    continue
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"获取东方财富网新闻列表时出错: {e}")
+            return []
+
+    def _get_tencent_finance_list(self, query: str, limit: int = 5) -> list:
+        """从腾讯财经获取新闻列表（仅获取标题、链接等基本信息）"""
+        try:
+            from urllib.parse import quote
+            
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+            
+            # 通过搜索引擎搜索腾讯财经内容
+            search_url = f"https://www.sogou.com/web?query=site:finance.qq.com+{quote(query)}"
+            
+            response = requests.get(search_url, headers=headers, timeout=10)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            results = []
+            
+            # 解析搜索结果
+            news_items = soup.find_all('div', class_='results')[:limit]
+            
+            for item in news_items:
+                try:
+                    title_elem = item.find('h3')
+                    if title_elem and title_elem.find('a'):
+                        title = title_elem.get_text(strip=True)
+                        link = title_elem.find('a')['href']
+                        
+                        # 获取摘要
+                        summary_elem = item.find('p')
+                        abstract = summary_elem.get_text(strip=True) if summary_elem else ''
+                        
+                        results.append({
+                            'title': title,
+                            'link': link,
+                            'source': '腾讯财经',
+                            'date': '未知',
+                            'abstract': abstract
+                        })
+                        
+                except Exception as e:
+                    logger.warning(f"解析腾讯财经新闻项时出错: {e}")
+                    continue
+            
+            return results
+            
+        except Exception as e:
+            logger.warning(f"获取腾讯财经新闻列表时出错: {e}")
+            return []
 
     def _get_article_content(self, url: str) -> str:
         """
