@@ -1,0 +1,340 @@
+[project]
+name = "financial-analysis-system"
+version = "0.1.0"
+description = "A-Share Financial Analysis System with MCP"
+authors = [
+    {name = "Financial Analyst", email = "analyst@example.com"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+keywords = ["finance", "mcp", "a-share", "analysis", "langchain", "ai"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+
+dependencies = [
+    # MCP相关
+    "fastmcp>=0.1.0",
+    "mcp>=1.0.0",
+    "langchain-mcp-adapters>=0.1.0",
+    
+    # 数据源
+    "baostock>=0.8.8",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "openpyxl>=3.1.0",
+    
+    # AI框架 (macOS优化版本)
+    "torch>=2.0.0",
+    "transformers>=4.35.0",
+    "peft>=0.6.0",
+    "accelerate>=0.24.0",
+    "evaluate>=0.4.0",
+    "sentencepiece>=0.1.99",
+    
+    # LangChain生态
+    "langchain>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "langgraph>=0.1.0",
+    
+    # 音频处理
+    "librosa>=0.10.0",
+    "openai-whisper>=20230314",
+    "pydub>=0.25.1",
+    
+    # 数据处理
+    "requests>=2.31.0",
+    "beautifulsoup4>=4.12.0",
+    "jsonlines>=3.1.0",
+    "oss2>=2.18.0",
+    "spacy>=3.7.0",
+    
+    # 机器学习工具
+    "xgboost>=2.0.0",
+    "tensorboard>=2.14.0",
+    "wandb>=0.16.0",
+    
+    # 工具库
+    "python-dotenv>=1.0.0",
+    "backoff>=2.2.0",
+    "jieba>=0.42.1",
+    "retry>=0.9.2",
+    "supervisor>=4.2.0",
+    "tabulate>=0.9.0",
+    
+    # Google AI和其他AI服务
+    "google-genai>=0.1.0",
+    "volcengine-python-sdk>=1.0.0",
+    
+    # 开发工具
+    "black>=23.0.0",
+    "isort>=5.12.0",
+]
+
+[project.optional-dependencies]
+# 开发依赖
+dev = [
+    "jupyter>=1.0.0",
+    "jupyterlab>=4.0.0",
+    "notebook>=7.0.0",
+    "ipywidgets>=8.0.0",
+    "ipdb>=0.13.0",
+    "jupytext>=1.15.0",
+    "jupyterlab-code-formatter>=2.2.0",
+    "jupyterlab-language-pack-zh-CN>=4.0.0",
+    "jupyterlab-tensorboard-pro>=0.7.0",
+]
+
+# 测试依赖
+test = [
+    "pytest>=7.0.0",
+    "pytest-xdist>=3.3.0",
+    "pytest-rerunfailures>=12.0.0",
+    "pytest-shard>=0.1.2",
+    "pytest-flakefinder>=1.1.0",
+    "hypothesis>=6.88.0",
+    "mock>=5.1.0",
+]
+
+# 代码质量
+lint = [
+    "mypy>=1.5.0",
+    "types-dataclasses>=0.6.0",
+    "lintrunner>=0.12.0",
+]
+
+# macOS 特定
+macos = [
+    "pyobjc-framework-Cocoa>=9.0",
+]
+
+# GPU 支持（Apple Silicon MPS）
+gpu = [
+    "torch[mps]>=2.0.0",
+]
+
+# 包管理工具
+tools = [
+    "pipdeptree>=2.13.0",
+    "pipreqs>=0.4.13",
+    "pipx>=1.2.0",
+    "uv>=0.1.0",
+    "virtualenv>=20.24.0",
+]
+
+# 完整功能（包含所有可选依赖）
+full = [
+    "financial-analysis-system[dev,test,lint,macos,gpu,tools]",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/financial-analysis-system"
+Repository = "https://github.com/yourusername/financial-analysis-system"
+Documentation = "https://financial-analysis-system.readthedocs.io"
+"Bug Tracker" = "https://github.com/yourusername/financial-analysis-system/issues"
+
+[project.scripts]
+financial-analysis = "financial_analysis_system.main:main"
+mcp-server = "financial_analysis_system.mcp_server:start_server"
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+# 修正的包发现配置
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "Financial-MCP-Agent*",
+    "a-share-mcp-is-just-i-need*",
+    "financial_analysis_system*",
+    "src*",
+]
+exclude = [
+    # 排除数据文件和临时文件
+    "risk_nasdaq*",
+    "nasdaq_news_sentiment*",
+    "*.csv",
+    "*.json",
+    "*.md", 
+    "logs*",
+    "reports*",
+    "data*",
+    # 排除模型文件
+    "Qwen*",
+    "qwen_*",
+    "*.bin",
+    "*.safetensors",
+    "*.onnx",
+    # 排除编译和缓存文件
+    "__pycache__*",
+    "*.pyc",
+    "*.pyo",
+    "*.pyd",
+    ".pytest_cache*",
+    ".mypy_cache*",
+    # 排除测试和训练脚本
+    "test_*",
+    "train_*",
+    "tests*",
+    # 排除环境文件
+    ".env*",
+    ".venv*",
+    "venv*",
+]
+
+[tool.uv]
+dev-dependencies = [
+    # 额外的uv管理开发依赖
+    "pre-commit>=3.5.0",
+    "ruff>=0.1.0",
+]
+
+# Black 代码格式化配置
+[tool.black]
+line-length = 88
+target-version = ['py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | Qwen.*
+  | qwen_.*
+  | risk_nasdaq.*
+  | nasdaq_news_sentiment.*
+)/
+'''
+
+# isort 导入排序配置
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = [
+    "financial_analysis_system", 
+    "Financial-MCP-Agent",
+    "a-share-mcp-is-just-i-need"
+]
+sections = [
+    "FUTURE",
+    "STDLIB", 
+    "THIRDPARTY",
+    "FIRSTPARTY",
+    "LOCALFOLDER"
+]
+
+# pytest 配置
+[tool.pytest.ini_options]
+testpaths = ["tests", "test"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "-v",
+    "--tb=short",
+    "--strict-config",
+    "--strict-markers",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning",
+    "ignore::FutureWarning",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+# mypy 类型检查配置
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false  # 设为false以减少初期类型错误
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = false
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+show_error_codes = true
+
+# 忽略某些模块的类型检查
+[[tool.mypy.overrides]]
+module = [
+    "baostock.*",
+    "jieba.*",
+    "librosa.*",
+    "pydub.*",
+    "spacy.*",
+    "wandb.*",
+]
+ignore_missing_imports = true
+
+# Ruff 配置 (现代化的 linter)
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings  
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # 允许在 __init__.py 中有未使用的导入
+
+# 覆盖配置
+[tool.coverage.run]
+source = [
+    "financial_analysis_system",
+    "Financial-MCP-Agent", 
+    "a-share-mcp-is-just-i-need"
+]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/*_test.py",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]
