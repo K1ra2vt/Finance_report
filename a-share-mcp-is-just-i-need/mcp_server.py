@@ -4,7 +4,7 @@ from datetime import datetime
 
 from mcp.server.fastmcp import FastMCP
 
-# Import the interface and the concrete implementation
+# 导入数据和新闻获取的接口和实现，方便切换实现
 from src.data_source_interface import FinancialDataSource
 from src.baostock_data_source import BaostockDataSource
 from src.utils import setup_logging

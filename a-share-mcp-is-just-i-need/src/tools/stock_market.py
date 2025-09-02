@@ -60,7 +60,7 @@ def register_stock_market_tools(app: FastMCP, active_data_source: FinancialDataS
 
     参数:
         app: FastMCP应用实例
-        active_data_source: 活跃的金融数据源
+        active_data_source: 使用的金融数据源
     """
 
     @app.tool()
